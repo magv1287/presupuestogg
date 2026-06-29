@@ -140,13 +140,6 @@ export default function Dashboard() {
             <p className="text-gray-600">
               Selecciona una opción arriba para comenzar a gestionar tu presupuesto familiar.
             </p>
-            {userProfile && userProfile.monthlyIncome === 0 && (
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm">
-                  💡 <strong>Consejo:</strong> Configura tu perfil en la sección de Configuración para obtener análisis más precisos.
-                </p>
-              </div>
-            )}
           </div>
         </main>
       </div>

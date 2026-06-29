@@ -5,7 +5,10 @@ import { MonthlyExpenses } from '@/types/transaction';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { monthsData } = body as { monthsData: MonthlyExpenses[] };
+    const { monthsData, monthlyIncomes } = body as { 
+      monthsData: MonthlyExpenses[];
+      monthlyIncomes: { [month: string]: number };
+    };
 
     if (!monthsData || !Array.isArray(monthsData) || monthsData.length === 0) {
       return NextResponse.json(
@@ -14,7 +17,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const analysis = await analyzeExpenses(monthsData);
+    if (!monthlyIncomes || Object.keys(monthlyIncomes).length === 0) {
+      return NextResponse.json(
+        { error: 'Se requieren los ingresos mensuales para cada periodo' },
+        { status: 400 }
+      );
+    }
+
+    const analysis = await analyzeExpenses(monthsData, monthlyIncomes);
 
     return NextResponse.json({
       success: true,

@@ -25,7 +25,6 @@ export const createUserProfile = async (
   await setDoc(userRef, {
     email,
     name: profile.name || '',
-    monthlyIncome: profile.monthlyIncome || 0,
     savingsAccounts: profile.savingsAccounts || [],
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
@@ -42,7 +41,6 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
       uid,
       email: data.email,
       name: data.name,
-      monthlyIncome: data.monthlyIncome,
       savingsAccounts: data.savingsAccounts,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),

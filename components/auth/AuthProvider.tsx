@@ -52,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Create new profile
             await createUserProfile(firebaseUser.uid, firebaseUser.email!, {
               name: firebaseUser.displayName || '',
-              monthlyIncome: 0,
               savingsAccounts: [],
             });
             profile = await getUserProfile(firebaseUser.uid);

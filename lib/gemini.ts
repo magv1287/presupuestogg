@@ -11,7 +11,8 @@ export interface GeminiAnalysis {
 }
 
 export const analyzeExpenses = async (
-  monthsData: MonthlyExpenses[]
+  monthsData: MonthlyExpenses[],
+  monthlyIncomes: { [month: string]: number }
 ): Promise<GeminiAnalysis> => {
   const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
@@ -22,7 +23,8 @@ DATOS DE GASTOS:
 ${monthsData.map(month => `
 Mes: ${month.month}
 Total de Gastos: $${month.totalExpenses.toFixed(2)}
-Total de Ingresos: $${month.totalIncome.toFixed(2)}
+Ingresos Reales del Periodo: $${(monthlyIncomes[month.month] || 0).toFixed(2)}
+Balance: $${((monthlyIncomes[month.month] || 0) - month.totalExpenses).toFixed(2)}
 Categorías:
 ${Object.entries(month.categories).map(([cat, amount]) => `  - ${cat}: $${amount.toFixed(2)}`).join('\n')}
 `).join('\n---\n')}
@@ -30,7 +32,7 @@ ${Object.entries(month.categories).map(([cat, amount]) => `  - ${cat}: $${amount
 INSTRUCCIONES:
 1. Identifica áreas donde se puede RECORTAR el gasto de forma REALISTA (no sugieras eliminar gastos esenciales).
 2. Identifica áreas donde podría ser NECESARIO AUMENTAR el presupuesto (salud, educación, emergencias, etc.).
-3. Basándote en el excedente o déficit, proporciona sugerencias ESTRATÉGICAS de inversión o ahorro.
+3. Basándote en el excedente o déficit REAL (ingresos vs gastos), proporciona sugerencias ESTRATÉGICAS de inversión o ahorro.
 4. Sé directo, pragmático y específico. Usa números cuando sea posible.
 
 Responde en formato JSON con esta estructura exacta:

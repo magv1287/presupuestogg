@@ -3,6 +3,7 @@
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
+import { Sidebar } from '@/components/Sidebar';
 import { PeriodSelector } from '@/components/PeriodSelector';
 import { IncomeInput } from '@/components/IncomeInput';
 import { getTransactionsByPeriod, savePeriodIncome, savePeriodAnalysis } from '@/lib/firebase/firestore';
@@ -189,21 +190,14 @@ export default function Compare() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#0f0f0f]">
-        <header className="bg-[#1a1a1a] border-b border-[#404040]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-[#a3a3a3] hover:text-[#f5f5f5] transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </Link>
-              <h1 className="text-2xl font-bold text-[#f5f5f5]">Análisis Quincenal</h1>
-            </div>
+      <div className="min-h-screen bg-[#0a0a0a]">
+        <Sidebar />
+        
+        <main className="ml-64 p-8">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-[#e5e5e5] mb-2">Análisis Quincenal</h2>
+            <p className="text-[#a3a3a3]">Gestiona y analiza tus gastos por quincena</p>
           </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Period Selection */}
           <div className="mb-8">
             <div className="mb-6">

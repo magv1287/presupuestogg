@@ -12,28 +12,36 @@ export interface GeminiAnalysis {
 
 export const analyzeExpenses = async (
   monthsData: MonthlyExpenses[],
-  monthlyIncomes: { [month: string]: number }
+  monthlyIncomes: { [month: string]: { user1: number; user2: number; total: number } }
 ): Promise<GeminiAnalysis> => {
   const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
   const prompt = `
-Eres un asesor financiero experto. Analiza los siguientes datos de gastos mensuales de una familia y proporciona recomendaciones pragmáticas y realistas.
+Eres un asesor financiero experto. Analiza los siguientes datos de gastos de una familia (Grecia y Miguel) y proporciona recomendaciones pragmáticas y realistas.
 
-DATOS DE GASTOS:
-${monthsData.map(month => `
-Mes: ${month.month}
-Total de Gastos: $${month.totalExpenses.toFixed(2)}
-Ingresos Reales del Periodo: $${(monthlyIncomes[month.month] || 0).toFixed(2)}
-Balance: $${((monthlyIncomes[month.month] || 0) - month.totalExpenses).toFixed(2)}
-Categorías:
+DATOS DE GASTOS POR PERIODO:
+${monthsData.map(month => {
+  const income = monthlyIncomes[month.month] || { user1: 0, user2: 0, total: 0 };
+  const balance = income.total - month.totalExpenses;
+  return `
+Periodo: ${month.month}
+Ingresos:
+  - Grecia: $${income.user1.toFixed(2)}
+  - Miguel: $${income.user2.toFixed(2)}
+  - Total Hogar: $${income.total.toFixed(2)}
+Gastos Totales: $${month.totalExpenses.toFixed(2)}
+Balance: $${balance.toFixed(2)} ${balance >= 0 ? '(Excedente)' : '(Déficit)'}
+Categorías de Gasto:
 ${Object.entries(month.categories).map(([cat, amount]) => `  - ${cat}: $${amount.toFixed(2)}`).join('\n')}
-`).join('\n---\n')}
+`;
+}).join('\n---\n')}
 
 INSTRUCCIONES:
 1. Identifica áreas donde se puede RECORTAR el gasto de forma REALISTA (no sugieras eliminar gastos esenciales).
 2. Identifica áreas donde podría ser NECESARIO AUMENTAR el presupuesto (salud, educación, emergencias, etc.).
-3. Basándote en el excedente o déficit REAL (ingresos vs gastos), proporciona sugerencias ESTRATÉGICAS de inversión o ahorro.
-4. Sé directo, pragmático y específico. Usa números cuando sea posible.
+3. Basándote en el balance REAL (ingresos combinados vs gastos), proporciona sugerencias ESTRATÉGICAS de inversión o ahorro.
+4. Considera que son dos personas con ingresos separados pero gastos compartidos.
+5. Sé directo, pragmático y específico. Usa números cuando sea posible.
 
 Responde en formato JSON con esta estructura exacta:
 {

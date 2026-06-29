@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { monthsData, monthlyIncomes } = body as { 
       monthsData: MonthlyExpenses[];
-      monthlyIncomes: { [month: string]: number };
+      monthlyIncomes: { [month: string]: { user1: number; user2: number; total: number } };
     };
 
     if (!monthsData || !Array.isArray(monthsData) || monthsData.length === 0) {

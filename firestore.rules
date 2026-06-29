@@ -22,5 +22,10 @@ service cloud.firestore {
     match /analyses/{analysisId} {
       allow read, write: if isAuthorized();
     }
+    
+    // Periods collection (quincenal analysis)
+    match /periods/{userId}/analyses/{periodId} {
+      allow read, write: if isAuthorized() && request.auth.uid == userId;
+    }
   }
 }

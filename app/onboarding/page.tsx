@@ -31,14 +31,15 @@ export default function OnboardingPage() {
     }
   }, [householdProfile]);
   
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    } else if (householdProfile?.onboardingCompleted) {
+      router.push('/dashboard/resumen');
+    }
+  }, [user, householdProfile, router]);
   
-  // Skip onboarding if already completed
-  if (householdProfile?.onboardingCompleted) {
-    router.push('/dashboard/resumen');
+  if (!user || householdProfile?.onboardingCompleted) {
     return null;
   }
   

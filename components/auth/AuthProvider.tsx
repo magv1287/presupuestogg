@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
-import { isEmailAllowed } from '@/lib/firebase/auth';
+import { isAuthorizedUser } from '@/lib/firebase/auth';
 import { getUserProfile, createUserProfile } from '@/lib/firebase/firestore';
 import { User } from '@/types/user';
 
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (firebaseUser) {
           // Validate email
-          if (!isEmailAllowed(firebaseUser.email)) {
+          if (!isAuthorizedUser(firebaseUser.email || '')) {
             await auth.signOut();
             setError('Acceso denegado. Solo usuarios autorizados pueden acceder.');
             setUser(null);

@@ -1,19 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { updateUserProfile } from '@/lib/firebase/firestore';
+import { updateHouseholdProfile } from '@/lib/firebase/household';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, userProfile } = useAuth();
+  const { user, householdProfile } = useAuth();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    monthlyIncome: '',
-    savingsAccounts: [] as string[],
-    newAccount: '',
+    savingsAccounts: [] as Array<{ name: string; balance: number }>,
+    newAccountName: '',
+    newAccountBalance: '',
+    emergencyFundBalance: '',
+    emergencyFundMonths: '3',
   });
+  
+  // Load existing data if available
+  useEffect(() => {
+    if (householdProfile) {
+      setFormData(prev => ({
+        ...prev,
+        savingsAccounts: householdProfile.savingsAccounts || [],
+        emergencyFundBalance: householdProfile.emergencyFund?.currentBalance?.toString() || '',
+        emergencyFundMonths: householdProfile.emergencyFund?.targetMonths?.toString() || '3',
+      }));
+      setStep(householdProfile.onboardingStep || 1);
+    }
+  }, [householdProfile]);
   
   if (!user) {
     router.push('/login');
@@ -21,14 +37,41 @@ export default function OnboardingPage() {
   }
   
   // Skip onboarding if already completed
-  if (userProfile?.onboardingCompleted) {
+  if (householdProfile?.onboardingCompleted) {
     router.push('/dashboard/resumen');
     return null;
   }
   
-  const handleNext = () => {
+  const saveProgress = async (newStep: number, updates: any = {}) => {
+    try {
+      await updateHouseholdProfile({
+        ...updates,
+        onboardingStep: newStep,
+      });
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    }
+  };
+  
+  const handleNext = async () => {
     if (step < 3) {
-      setStep(step + 1);
+      const nextStep = step + 1;
+      
+      // Save progress before moving to next step
+      if (step === 1) {
+        await saveProgress(nextStep, {
+          savingsAccounts: formData.savingsAccounts,
+        });
+      } else if (step === 2) {
+        await saveProgress(nextStep, {
+          emergencyFund: {
+            currentBalance: parseFloat(formData.emergencyFundBalance) || 0,
+            targetMonths: parseInt(formData.emergencyFundMonths) || 3,
+          },
+        });
+      }
+      
+      setStep(nextStep);
     }
   };
   
@@ -38,34 +81,61 @@ export default function OnboardingPage() {
     }
   };
   
-  const handleAddAccount = () => {
-    if (formData.newAccount.trim()) {
+  const handleAddAccount = async () => {
+    if (formData.newAccountName.trim()) {
+      const newAccount = {
+        name: formData.newAccountName.trim(),
+        balance: parseFloat(formData.newAccountBalance) || 0,
+      };
+      
+      const updatedAccounts = [...formData.savingsAccounts, newAccount];
+      
       setFormData({
         ...formData,
-        savingsAccounts: [...formData.savingsAccounts, formData.newAccount.trim()],
-        newAccount: '',
+        savingsAccounts: updatedAccounts,
+        newAccountName: '',
+        newAccountBalance: '',
+      });
+      
+      // Save immediately
+      await saveProgress(step, {
+        savingsAccounts: updatedAccounts,
       });
     }
   };
   
-  const handleRemoveAccount = (index: number) => {
+  const handleRemoveAccount = async (index: number) => {
+    const updatedAccounts = formData.savingsAccounts.filter((_, i) => i !== index);
+    
     setFormData({
       ...formData,
-      savingsAccounts: formData.savingsAccounts.filter((_, i) => i !== index),
+      savingsAccounts: updatedAccounts,
+    });
+    
+    // Save immediately
+    await saveProgress(step, {
+      savingsAccounts: updatedAccounts,
     });
   };
   
   const handleComplete = async () => {
+    setLoading(true);
     try {
-      await updateUserProfile(user.uid, {
-        monthlyIncome: parseFloat(formData.monthlyIncome) || 0,
+      await updateHouseholdProfile({
         savingsAccounts: formData.savingsAccounts,
+        emergencyFund: {
+          currentBalance: parseFloat(formData.emergencyFundBalance) || 0,
+          targetMonths: parseInt(formData.emergencyFundMonths) || 3,
+        },
         onboardingCompleted: true,
+        onboardingStep: 3,
       });
       router.push('/dashboard/resumen');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       alert('Error al guardar configuración');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -94,91 +164,133 @@ export default function OnboardingPage() {
                 ¡Bienvenidos a GonGar! 👋
               </h2>
               <p className="text-[#9CA3AF] mb-6">
-                Vamos a configurar tu presupuesto en 3 pasos simples.
+                Configuremos las cuentas de ahorro del household.
               </p>
               
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#10B98120] text-[#10B981] flex items-center justify-center flex-shrink-0 font-semibold">
-                    1
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[#F9FAFB]">Ingreso Mensual</h3>
-                    <p className="text-sm text-[#9CA3AF]">Define tu ingreso mensual combinado</p>
-                  </div>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-[#F9FAFB] mb-2">
+                    Nombre de la cuenta
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.newAccountName}
+                    onChange={(e) => setFormData({ ...formData, newAccountName: e.target.value })}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddAccount()}
+                    placeholder="Ej: Marcus HYSA, Ally Savings..."
+                    className="w-full px-4 py-3 bg-[#1F2937] border border-[#374151] rounded-lg text-[#F9FAFB] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                  />
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#10B98120] text-[#10B981] flex items-center justify-center flex-shrink-0 font-semibold">
-                    2
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[#F9FAFB]">Cuentas de Ahorro</h3>
-                    <p className="text-sm text-[#9CA3AF]">Registra tus cuentas de ahorro para excluirlas</p>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#F9FAFB] mb-2">
+                    Balance actual
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.newAccountBalance}
+                    onChange={(e) => setFormData({ ...formData, newAccountBalance: e.target.value })}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddAccount()}
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 bg-[#1F2937] border border-[#374151] rounded-lg text-[#F9FAFB] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                  />
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#10B98120] text-[#10B981] flex items-center justify-center flex-shrink-0 font-semibold">
-                    3
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[#F9FAFB]">¡Listo!</h3>
-                    <p className="text-sm text-[#9CA3AF]">Comienza a subir tus transacciones</p>
-                  </div>
-                </div>
+                <button
+                  onClick={handleAddAccount}
+                  className="w-full px-4 py-3 bg-[#1F2937] border border-[#374151] rounded-lg text-[#10B981] hover:bg-[#374151] transition-colors"
+                >
+                  + Agregar Cuenta
+                </button>
               </div>
               
-              <button
-                onClick={handleNext}
-                className="w-full bg-[#10B981] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#059669] transition-colors"
-              >
-                Comenzar
-              </button>
+              {formData.savingsAccounts.length > 0 && (
+                <div className="space-y-2 mb-6">
+                  <p className="text-sm font-medium text-[#9CA3AF] mb-2">
+                    Cuentas agregadas:
+                  </p>
+                  {formData.savingsAccounts.map((account, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-[#1F2937] rounded-lg"
+                    >
+                      <div>
+                        <p className="text-[#F9FAFB] font-medium">{account.name}</p>
+                        <p className="text-sm text-[#9CA3AF]">${account.balance.toLocaleString()}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveAccount(index)}
+                        className="text-[#EF4444] hover:text-[#DC2626] transition-colors"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={handleNext}
+                  disabled={formData.savingsAccounts.length === 0}
+                  className="flex-1 px-6 py-3 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
             </div>
           )}
           
           {step === 2 && (
             <div>
               <h2 className="text-2xl font-bold text-[#F9FAFB] mb-2">
-                Ingreso Mensual
+                Fondo de Emergencia 🛡️
               </h2>
               <p className="text-[#9CA3AF] mb-6">
-                ¿Cuál es el ingreso mensual combinado de la familia?
+                Configura tu fondo de emergencia para tener un colchón financiero.
               </p>
               
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-[#F9FAFB] mb-2">
-                  Ingreso Mensual (USD)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-lg">
-                    $
-                  </span>
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="block text-sm font-medium text-[#F9FAFB] mb-2">
+                    Balance actual del fondo
+                  </label>
                   <input
                     type="number"
-                    value={formData.monthlyIncome}
-                    onChange={(e) => setFormData({ ...formData, monthlyIncome: e.target.value })}
-                    placeholder="5000"
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-4 py-3 pl-8 text-[#F9FAFB] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
+                    value={formData.emergencyFundBalance}
+                    onChange={(e) => setFormData({ ...formData, emergencyFundBalance: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 bg-[#1F2937] border border-[#374151] rounded-lg text-[#F9FAFB] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#10B981]"
                   />
                 </div>
-                <p className="text-xs text-[#6B7280] mt-2">
-                  Este valor se usa para calcular tu tasa de ahorro mensual
-                </p>
+                
+                <div>
+                  <label className="block text-sm font-medium text-[#F9FAFB] mb-2">
+                    Meta (meses de gastos)
+                  </label>
+                  <select
+                    value={formData.emergencyFundMonths}
+                    onChange={(e) => setFormData({ ...formData, emergencyFundMonths: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#1F2937] border border-[#374151] rounded-lg text-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#10B981]"
+                  >
+                    <option value="3">3 meses</option>
+                    <option value="6">6 meses</option>
+                    <option value="9">9 meses</option>
+                    <option value="12">12 meses</option>
+                  </select>
+                </div>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button
                   onClick={handleBack}
-                  className="flex-1 bg-[#1F2937] text-[#F9FAFB] px-6 py-3 rounded-lg font-medium hover:bg-[#374151] transition-colors"
+                  className="px-6 py-3 bg-[#1F2937] text-[#F9FAFB] rounded-lg hover:bg-[#374151] transition-colors"
                 >
                   Atrás
                 </button>
                 <button
                   onClick={handleNext}
-                  disabled={!formData.monthlyIncome}
-                  className="flex-1 bg-[#10B981] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#059669] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-6 py-3 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors"
                 >
                   Siguiente
                 </button>
@@ -189,70 +301,41 @@ export default function OnboardingPage() {
           {step === 3 && (
             <div>
               <h2 className="text-2xl font-bold text-[#F9FAFB] mb-2">
-                Cuentas de Ahorro
+                ¡Todo listo! 🎉
               </h2>
               <p className="text-[#9CA3AF] mb-6">
-                Registra tus cuentas de ahorro para excluir transferencias del análisis
+                Tu household está configurado. Ahora puedes empezar a subir tus CSVs bancarios.
               </p>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#F9FAFB] mb-2">
-                  Nombre de la Cuenta
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={formData.newAccount}
-                    onChange={(e) => setFormData({ ...formData, newAccount: e.target.value })}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddAccount()}
-                    placeholder="ej: Goldman Sachs HYSA"
-                    className="flex-1 bg-[#1F2937] border border-[#374151] rounded-lg px-4 py-2.5 text-[#F9FAFB] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
-                  />
-                  <button
-                    onClick={handleAddAccount}
-                    className="bg-[#10B981] text-white px-4 py-2.5 rounded-lg font-medium hover:bg-[#059669] transition-colors"
-                  >
-                    Agregar
-                  </button>
+              <div className="bg-[#1F2937] rounded-lg p-6 mb-8 space-y-4">
+                <div>
+                  <p className="text-sm text-[#9CA3AF] mb-1">Cuentas de ahorro</p>
+                  <p className="text-lg font-semibold text-[#F9FAFB]">
+                    {formData.savingsAccounts.length} cuenta(s)
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-[#9CA3AF] mb-1">Fondo de emergencia</p>
+                  <p className="text-lg font-semibold text-[#F9FAFB]">
+                    ${parseFloat(formData.emergencyFundBalance || '0').toLocaleString()} / {formData.emergencyFundMonths} meses
+                  </p>
                 </div>
               </div>
               
-              {formData.savingsAccounts.length > 0 && (
-                <div className="mb-8">
-                  <p className="text-sm font-medium text-[#F9FAFB] mb-3">
-                    Cuentas Registradas ({formData.savingsAccounts.length})
-                  </p>
-                  <div className="space-y-2">
-                    {formData.savingsAccounts.map((account, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between bg-[#1F2937] rounded-lg px-4 py-3"
-                      >
-                        <span className="text-[#F9FAFB]">{account}</span>
-                        <button
-                          onClick={() => handleRemoveAccount(index)}
-                          className="text-[#EF4444] hover:text-[#DC2626] transition-colors"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button
                   onClick={handleBack}
-                  className="flex-1 bg-[#1F2937] text-[#F9FAFB] px-6 py-3 rounded-lg font-medium hover:bg-[#374151] transition-colors"
+                  className="px-6 py-3 bg-[#1F2937] text-[#F9FAFB] rounded-lg hover:bg-[#374151] transition-colors"
                 >
                   Atrás
                 </button>
                 <button
                   onClick={handleComplete}
-                  className="flex-1 bg-[#10B981] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#059669] transition-colors"
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors disabled:opacity-50"
                 >
-                  Completar
+                  {loading ? 'Guardando...' : 'Completar'}
                 </button>
               </div>
             </div>

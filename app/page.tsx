@@ -6,19 +6,19 @@ import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, userProfile, loading } = useAuth();
+  const { user, householdProfile, loading } = useAuth();
   
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push('/login');
-      } else if (!userProfile?.onboardingCompleted) {
+      } else if (!householdProfile?.onboardingCompleted) {
         router.push('/onboarding');
       } else {
         router.push('/dashboard/resumen');
       }
     }
-  }, [user, userProfile, loading, router]);
+  }, [user, householdProfile, loading, router]);
   
   return (
     <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">

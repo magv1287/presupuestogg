@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export const Sidebar = () => {
-  const { userProfile } = useAuth();
+  const { householdProfile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -85,11 +85,11 @@ export const Sidebar = () => {
       <div className="mt-auto">
         <div className="flex items-center gap-3 px-4 py-3 bg-[#1a1a1a] rounded-lg border border-[#262626]">
           <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-            {userProfile?.name?.charAt(0) || userProfile?.email?.charAt(0) || 'U'}
+            GG
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-[#e5e5e5] truncate">
-              {userProfile?.email?.split('@')[0]}
+              GonGar Household
             </p>
             <button
               onClick={handleSignOut}

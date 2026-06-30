@@ -14,7 +14,6 @@ import {
 import { db } from './config';
 import { User, UserProfile } from '@/types/user';
 import { Transaction } from '@/types/transaction';
-import { PeriodIncome, PeriodExpenses, PeriodAnalysis } from '@/types/period';
 
 // User operations
 export const createUserProfile = async (
@@ -147,68 +146,3 @@ export const getTransactionsByDateRange = async (
   }));
 };
 
-// Period operations
-export const savePeriodIncome = async (
-  userId: string,
-  periodId: string,
-  user1Income: number,
-  user2Income: number
-): Promise<void> => {
-  const periodRef = doc(db, 'periods', userId, 'analyses', periodId);
-  const periodSnap = await getDoc(periodRef);
-  
-  const incomeData = {
-    periodId,
-    user1Income,
-    user2Income,
-    totalIncome: user1Income + user2Income,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  };
-  
-  if (periodSnap.exists()) {
-    // Update existing
-    await updateDoc(periodRef, {
-      incomes: incomeData,
-      updatedAt: Timestamp.now(),
-    });
-  } else {
-    // Create new
-    await setDoc(periodRef, {
-      periodId,
-      userId,
-      incomes: incomeData,
-      expenses: null,
-      geminiAnalysis: null,
-      isCompleted: false,
-      completedAt: null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-  }
-};
-
-export const savePeriodAnalysis = async (
-  userId: string,
-  periodId: string,
-  expenses: PeriodExpenses,
-  geminiAnalysis: any
-): Promise<void> => {
-  const periodRef = doc(db, 'periods', userId, 'analyses', periodId);
-  
-  await updateDoc(periodRef, {
-    expenses,
-    geminiAnalysis,
-    isCompleted: true,
-    completedAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  });
-};
-
-export const getTransactionsByPeriod = async (
-  userId: string,
-  startDate: Date,
-  endDate: Date
-): Promise<Transaction[]> => {
-  return getTransactionsByDateRange(userId, startDate, endDate);
-};

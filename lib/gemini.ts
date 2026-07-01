@@ -1,72 +1,51 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { MonthlyExpenses } from '@/types/transaction';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Central model constant — change here to update everywhere
+export const GEMINI_MODEL = 'gemini-2.5-flash';
 
-export interface GeminiAnalysis {
-  cutRecommendations: string[];
-  increaseRecommendations: string[];
-  investmentSuggestions: string[];
-  summary: string;
+// Singleton client instance
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+/**
+ * Generate text content using Gemini.
+ * Use this for: analysis reports, categorization, any text generation.
+ */
+export async function generateText(
+  prompt: string,
+  systemInstruction?: string
+): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: {
+      ...(systemInstruction && { systemInstruction }),
+    },
+  });
+  return response.text ?? '';
 }
 
-export const analyzeExpenses = async (
-  monthsData: MonthlyExpenses[],
-  monthlyIncomes: { [month: string]: { user1: number; user2: number; total: number } }
-): Promise<GeminiAnalysis> => {
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
-  const prompt = `
-Eres un asesor financiero experto. Analiza los siguientes datos de gastos de una familia (Grecia y Miguel) y proporciona recomendaciones pragmáticas y realistas.
-
-DATOS DE GASTOS POR PERIODO:
-${monthsData.map(month => {
-  const income = monthlyIncomes[month.month] || { user1: 0, user2: 0, total: 0 };
-  const balance = income.total - month.totalExpenses;
-  return `
-Periodo: ${month.month}
-Ingresos:
-  - Grecia: $${income.user1.toFixed(2)}
-  - Miguel: $${income.user2.toFixed(2)}
-  - Total Hogar: $${income.total.toFixed(2)}
-Gastos Totales: $${month.totalExpenses.toFixed(2)}
-Balance: $${balance.toFixed(2)} ${balance >= 0 ? '(Excedente)' : '(Déficit)'}
-Categorías de Gasto:
-${Object.entries(month.categories).map(([cat, amount]) => `  - ${cat}: $${amount.toFixed(2)}`).join('\n')}
-`;
-}).join('\n---\n')}
-
-INSTRUCCIONES:
-1. Identifica áreas donde se puede RECORTAR el gasto de forma REALISTA (no sugieras eliminar gastos esenciales).
-2. Identifica áreas donde podría ser NECESARIO AUMENTAR el presupuesto (salud, educación, emergencias, etc.).
-3. Basándote en el balance REAL (ingresos combinados vs gastos), proporciona sugerencias ESTRATÉGICAS de inversión o ahorro.
-4. Considera que son dos personas con ingresos separados pero gastos compartidos.
-5. Sé directo, pragmático y específico. Usa números cuando sea posible.
-
-Responde en formato JSON con esta estructura exacta:
-{
-  "cutRecommendations": ["recomendación 1", "recomendación 2", ...],
-  "increaseRecommendations": ["recomendación 1", "recomendación 2", ...],
-  "investmentSuggestions": ["sugerencia 1", "sugerencia 2", ...],
-  "summary": "Resumen ejecutivo del análisis en 2-3 oraciones"
+/**
+ * Generate content from image + text using Gemini Vision.
+ * Use this for: screenshot transaction extraction.
+ */
+export async function generateFromImage(
+  imageBase64: string,
+  mimeType: 'image/png' | 'image/jpeg',
+  textPrompt: string
+): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [
+      {
+        inlineData: {
+          mimeType,
+          data: imageBase64,
+        },
+      },
+      { text: textPrompt },
+    ],
+  });
+  return response.text ?? '';
 }
-`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No se pudo extraer JSON de la respuesta de Gemini');
-    }
-    
-    const analysis: GeminiAnalysis = JSON.parse(jsonMatch[0]);
-    return analysis;
-  } catch (error) {
-    console.error('Error calling Gemini API:', error);
-    throw new Error('Error al analizar los gastos con IA');
-  }
-};
+export { ai };

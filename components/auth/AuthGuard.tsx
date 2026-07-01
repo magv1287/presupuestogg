@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
+import { getDefaultPageRoute } from '@/lib/utils/stale-detection';
 
 const PUBLIC_ROUTES = ['/login'];
 
@@ -10,25 +11,32 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, householdProfile, loading } = useAuth();
-  
+
+  const getUserDefaultRoute = () => {
+    const email = user?.email;
+    const pref = email ? householdProfile?.userPreferences?.[email]?.defaultPage : undefined;
+    return getDefaultPageRoute(pref || 'resumen');
+  };
+
   useEffect(() => {
     if (loading) return;
-    
-    // If not authenticated and not on login page → redirect to login
+
     if (!user && !PUBLIC_ROUTES.includes(pathname)) {
       router.push('/login');
       return;
     }
-    
-    // If authenticated but onboarding not completed → redirect to onboarding
+
     if (user && !householdProfile?.onboardingCompleted && pathname !== '/onboarding') {
       router.push('/onboarding');
       return;
     }
-    
-    // If authenticated and onboarding completed but on login/onboarding → redirect to dashboard
-    if (user && householdProfile?.onboardingCompleted && (pathname === '/login' || pathname === '/onboarding')) {
-      router.push('/dashboard/resumen');
+
+    if (
+      user &&
+      householdProfile?.onboardingCompleted &&
+      (pathname === '/login' || pathname === '/onboarding')
+    ) {
+      router.push(getUserDefaultRoute());
       return;
     }
   }, [user, householdProfile, loading, pathname, router]);

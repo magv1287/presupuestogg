@@ -64,9 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setHouseholdProfile(null);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Auth error:', err);
-        setError(err.message || 'Error de autenticación');
+        setError(err instanceof Error ? err.message : 'Error de autenticación');
       } finally {
         setLoading(false);
       }

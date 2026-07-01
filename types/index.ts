@@ -48,6 +48,43 @@ export interface MonthlyAnalysis {
   aiSummary: string; // one-line summary for context
   generatedAt: Date;
   updatedAt: Date;
+  aiAnalysisStale?: boolean;
+  lastDataEditAt?: Date;
+  editHistory?: Array<{
+    editedAt: Date;
+    editType: 'replace' | 'merge';
+    transactionsAdded: number;
+    transactionsRemoved: number;
+  }>;
+}
+
+export type DefaultPage = 'resumen' | 'relacion' | 'cuenta';
+
+export interface UserPreference {
+  defaultPage: DefaultPage;
+}
+
+export interface ManualTransactionInput {
+  date: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+  account: string;
+}
+
+export interface DraftTransaction {
+  tempId: string;
+  date: string;
+  description: string;
+  merchant: string;
+  amount: number;
+  type: 'income' | 'expense';
+  account: string;
+  origin: 'file' | 'manual';
+  sourceFilename?: string;
+  owner?: 'Miguel' | 'Grecia';
+  source?: string;
+  needsReview?: boolean;
 }
 
 export interface Upload {

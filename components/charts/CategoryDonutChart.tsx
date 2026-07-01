@@ -25,6 +25,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
           outerRadius={100}
           paddingAngle={2}
           dataKey="amount"
+          nameKey="category"
         >
           {data.map((entry, index) => {
             const config = getCategoryConfig(entry.category);
@@ -42,7 +43,10 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
         />
         <Legend
           wrapperStyle={{ color: '#9CA3AF', fontSize: '12px' }}
-          formatter={(value) => value}
+          formatter={(value, entry) => {
+            const payload = entry?.payload as CategoryData | undefined;
+            return payload?.category || value;
+          }}
         />
       </PieChart>
     </ResponsiveContainer>

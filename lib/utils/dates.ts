@@ -51,3 +51,32 @@ export function formatDate(date: Date): string {
 export function parseDate(dateStr: string): Date {
   return new Date(dateStr);
 }
+
+export function parseMonthHintToYearMonth(monthHint: string, year?: number): string | null {
+  const normalized = monthHint
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const monthIndex = SPANISH_MONTHS.findIndex((month) => {
+    const monthNorm = month
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return monthNorm.startsWith(normalized) || normalized.startsWith(monthNorm.slice(0, 3));
+  });
+
+  if (monthIndex === -1) return null;
+
+  const resolvedYear = year ?? new Date().getFullYear();
+  const month = (monthIndex + 1).toString().padStart(2, '0');
+  return `${resolvedYear}-${month}`;
+}
+
+export function getYearFromMonthKey(monthKey: string): number {
+  return parseInt(monthKey.split('-')[0], 10);
+}
+
+export function getMonthNumberFromKey(monthKey: string): number {
+  return parseInt(monthKey.split('-')[1], 10);
+}

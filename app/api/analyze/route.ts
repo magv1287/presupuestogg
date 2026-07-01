@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { generateText } from '@/lib/gemini';
 
 interface AnalysisRequest {
-  month: string;
+  month: number;
   year: number;
+  monthKey: string;
   income: number;
   expenses: number;
   categoryBreakdown: { category: string; amount: number }[];
@@ -19,87 +18,80 @@ interface AnalysisRequest {
 export async function POST(req: NextRequest) {
   try {
     const data: AnalysisRequest = await req.json();
-    
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    
-    // 3-Layer Prompt System for GonGar Advisor
-    const systemPrompt = `Eres GonGar Advisor, un asistente financiero personal experto en análisis de presupuestos familiares. 
 
-Tu personalidad:
-- Empático y comprensivo
-- Directo pero amable
-- Enfocado en acciones concretas
-- Usa lenguaje casual pero profesional
+    const netSavings = data.income - data.expenses;
+    const savingsRate = data.income > 0 ? (netSavings / data.income) * 100 : 0;
 
-Tu objetivo: Ayudar a Miguel y Gaby a tomar mejores decisiones financieras.`;
+    const systemPrompt = `Eres GonGar Advisor, el asesor financiero personal y exclusivo de la familia González-García (Miguel y Grecia).
 
-    const contextPrompt = `Contexto del periodo ${data.month} ${data.year}:
+TUS PRINCIPIOS:
+1. Nunca recomiendas stocks individuales — solo ETFs de índice (VTI, VXUS, BND, SGOV)
+2. Siempre priorizas el fondo de emergencia antes de cualquier inversión
+3. Eres específico con cifras — nunca dices "considera ahorrar más"
+4. Nunca inventas datos — solo usas los que se te proporcionan
+5. Escribes siempre en español`;
 
-RESUMEN FINANCIERO:
-- Ingresos: $${data.income.toFixed(2)}
-- Gastos: $${data.expenses.toFixed(2)}
-- Balance: $${(data.income - data.expenses).toFixed(2)}
-- Tasa de ahorro: ${((1 - data.expenses / data.income) * 100).toFixed(1)}%
+    const contextPrompt = `DATOS DEL MES: ${data.monthKey}
 
-DESGLOSE POR CATEGORÍA:
-${data.categoryBreakdown.map(c => `- ${c.category}: $${c.amount.toFixed(2)} (${((c.amount / data.expenses) * 100).toFixed(1)}%)`).join('\n')}
+INGRESOS TOTALES: $${data.income.toFixed(2)}
+GASTOS TOTALES: $${data.expenses.toFixed(2)}
+AHORRO NETO: $${netSavings.toFixed(2)} (${savingsRate.toFixed(1)}%)
 
-TOP 5 TRANSACCIONES:
-${data.topTransactions.map((t, i) => `${i + 1}. ${t.description} - $${t.amount.toFixed(2)} (${t.category})`).join('\n')}
+GASTOS POR CATEGORÍA:
+${JSON.stringify(data.categoryBreakdown, null, 2)}
 
-${data.previousMonth ? `COMPARACIÓN CON MES ANTERIOR:
-- Ingresos: ${data.previousMonth.income > data.income ? '↓' : '↑'} ${Math.abs(((data.income - data.previousMonth.income) / data.previousMonth.income) * 100).toFixed(1)}%
-- Gastos: ${data.previousMonth.expenses > data.expenses ? '↓' : '↑'} ${Math.abs(((data.expenses - data.previousMonth.expenses) / data.previousMonth.expenses) * 100).toFixed(1)}%` : ''}`;
+TOP TRANSACCIONES:
+${JSON.stringify(data.topTransactions, null, 2)}
 
-    const taskPrompt = `Genera un análisis financiero en formato JSON con esta estructura EXACTA:
+${data.previousMonth ? `MES ANTERIOR: Ingresos $${data.previousMonth.income} | Gastos $${data.previousMonth.expenses}` : 'Sin datos de mes anterior.'}`;
 
-{
-  "summary": "Resumen ejecutivo en 2-3 oraciones sobre la salud financiera del mes",
-  "insights": [
-    "Insight 1: Observación específica con datos",
-    "Insight 2: Patrón o tendencia identificada",
-    "Insight 3: Comparación o contexto relevante"
-  ],
-  "recommendations": [
-    "Recomendación 1: Acción concreta y específica",
-    "Recomendación 2: Estrategia de optimización",
-    "Recomendación 3: Meta o hábito a desarrollar"
-  ],
-  "alerts": [
-    "Alerta 1: Área de preocupación si aplica"
-  ],
-  "score": 85
-}
+    const instructionPrompt = `Genera el análisis siguiendo EXACTAMENTE esta estructura con estos títulos y emojis:
 
-REGLAS:
-1. El score es de 0-100 basado en: tasa de ahorro (40%), balance categorías (30%), tendencias (30%)
-2. Insights deben incluir números específicos
-3. Recommendations deben ser accionables
-4. Alerts solo si hay problemas reales (gastos >90% ingresos, categoría >40% del total, etc.)
-5. Usa lenguaje directo y personal
-6. NO uses markdown, solo JSON puro
+## 📊 SITUACIÓN DE ${data.month}/${data.year}
 
-Responde SOLO con el JSON:`;
+[2-3 oraciones sobre el mes]
 
-    const fullPrompt = `${systemPrompt}\n\n${contextPrompt}\n\n${taskPrompt}`;
-    
-    const result = await model.generateContent(fullPrompt);
-    const response = result.response.text();
-    
-    // Extract JSON from response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Invalid response format from Gemini');
-    }
-    
-    const analysis = JSON.parse(jsonMatch[0]);
-    
-    return NextResponse.json({ analysis });
-  } catch (error: any) {
-    console.error('Analysis error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate analysis' },
-      { status: 500 }
+## 📈 VS PERÍODO ANTERIOR
+
+[Comparación concreta o indicar si es el primer mes]
+
+## ⚠️ ÁREAS DE ATENCIÓN
+
+[Máximo 4 categorías destacadas]
+
+## ✂️ RECOMENDACIONES — CPA
+
+[3-5 recomendaciones accionables con montos]
+
+## 📈 DÓNDE PONER EL DINERO — Inversor
+
+[Recomendaciones basadas en ahorro disponible]
+
+RESUMEN_PARA_HISTORIAL: [Una oración de máximo 100 caracteres]
+
+Límite: 700 palabras.`;
+
+    const response = await generateText(
+      `${contextPrompt}\n\n${instructionPrompt}`,
+      systemPrompt
     );
+
+    if (!response || response.trim().length < 50) {
+      throw new Error('Gemini devolvió un reporte vacío o inválido');
+    }
+
+    const summaryMatch = response.match(/RESUMEN_PARA_HISTORIAL:\s*(.+)/);
+    const aiSummary = summaryMatch ? summaryMatch[1].trim() : '';
+    const aiReport = response.replace(/RESUMEN_PARA_HISTORIAL:[\s\S]+/, '').trim();
+
+    if (!aiReport) {
+      throw new Error('No se pudo generar el reporte de análisis');
+    }
+
+    return NextResponse.json({ aiReport, aiSummary });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to generate analysis';
+    console.error('Analysis error:', error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

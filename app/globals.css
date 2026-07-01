@@ -29,6 +29,28 @@
   /* Borders */
   --border: #1F2937;
   --border-bright: #374151;
+
+  /* Sidebar — main always uses collapsed width; expanded sidebar is overlay */
+  --sidebar-width-collapsed: 64px;
+  --sidebar-width-expanded: 240px;
+
+  /* Spacing — mobile (<768px) */
+  --space-xs-mobile: 4px;
+  --space-sm-mobile: 8px;
+  --space-md-mobile: 16px;
+  --space-lg-mobile: 24px;
+  --font-base-mobile: 14px;
+  --button-padding-mobile: 10px 16px;
+  --button-min-height-mobile: 40px;
+
+  /* Spacing — desktop (≥768px) */
+  --space-xs-desktop: 8px;
+  --space-sm-desktop: 16px;
+  --space-md-desktop: 24px;
+  --space-lg-desktop: 40px;
+  --font-base-desktop: 16px;
+  --button-padding-desktop: 14px 28px;
+  --button-min-height-desktop: 48px;
   
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);

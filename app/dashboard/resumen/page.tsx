@@ -162,7 +162,7 @@ export default function ResumenPage() {
   const hasAnalyzedData = analyzedMonths.length > 0;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
+    <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#F9FAFB] mb-2 tracking-tight">
           Resumen Financiero

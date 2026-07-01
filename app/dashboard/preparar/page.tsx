@@ -4,7 +4,11 @@ import { Suspense } from 'react';
 import { PrepareMonthModal } from '@/components/upload/PrepareMonthModal';
 
 function PrepararContent() {
-  return <PrepareMonthModal />;
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto">
+      <PrepareMonthModal />
+    </div>
+  );
 }
 
 export default function PrepararPage() {

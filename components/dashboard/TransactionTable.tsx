@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { HouseholdTransaction, updateHouseholdTransactionCategory } from '@/lib/firebase/household';
-import { AmountDisplay } from '@/components/ui/AmountDisplay';
 import { Pill } from '@/components/ui/Pill';
 import { CATEGORY_LIST } from '@/lib/utils/categories';
 
@@ -51,23 +50,15 @@ export function TransactionTable({ transactions, onCategoryUpdated }: Transactio
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm table-fixed min-w-[720px]">
-        <colgroup>
-          <col className="w-[100px]" />
-          <col className="w-[28%]" />
-          <col className="w-[16%]" />
-          <col className="w-[110px]" />
-          <col className="w-[14%]" />
-          <col className="w-[100px]" />
-        </colgroup>
+      <table className="w-full text-sm">
         <thead>
-          <tr className="text-[#9CA3AF] border-b border-[#1F2937]">
-            <th className="text-left py-3 px-4 whitespace-nowrap">Fecha</th>
-            <th className="text-left py-3 px-4 whitespace-nowrap">Descripción</th>
-            <th className="text-left py-3 px-4 whitespace-nowrap">Categoría</th>
-            <th className="text-right py-3 px-4 whitespace-nowrap">Monto</th>
-            <th className="text-left py-3 px-4 whitespace-nowrap">Cuenta</th>
-            <th className="text-left py-3 px-4 whitespace-nowrap">Origen</th>
+          <tr className="border-b border-[#1F2937]">
+            <th className="text-left py-3 px-4 text-[#9CA3AF] font-medium">Fecha</th>
+            <th className="text-left py-3 px-4 text-[#9CA3AF] font-medium">Descripción</th>
+            <th className="text-left py-3 px-4 text-[#9CA3AF] font-medium">Categoría</th>
+            <th className="text-right py-3 px-4 text-[#9CA3AF] font-medium">Monto</th>
+            <th className="text-left py-3 px-4 text-[#9CA3AF] font-medium">Cuenta</th>
+            <th className="text-left py-3 px-4 text-[#9CA3AF] font-medium">Origen</th>
           </tr>
         </thead>
         <tbody>
@@ -78,14 +69,14 @@ export function TransactionTable({ transactions, onCategoryUpdated }: Transactio
             return (
               <tr
                 key={tx.id}
-                className={`border-b border-[#1F2937] ${
-                  tx.type === 'income' ? 'bg-[#10B98110]' : 'bg-[#EF444410]'
-                } ${tx.excluded ? 'opacity-50' : ''}`}
+                className={`border-b border-[#1F2937] hover:bg-[#1F2937] transition-colors ${
+                  tx.excluded ? 'opacity-50' : ''
+                }`}
               >
-                <td className="py-3 px-4 text-[#9CA3AF] whitespace-nowrap">
+                <td className="py-3 px-4 text-[#9CA3AF] font-mono text-xs whitespace-nowrap">
                   {tx.date.toLocaleDateString('es-ES')}
                 </td>
-                <td className="py-3 px-4 text-[#F9FAFB] break-words">{tx.description}</td>
+                <td className="py-3 px-4 text-[#F9FAFB]">{tx.description}</td>
                 <td className="py-3 px-4">
                   {uncategorized ? (
                     editingId === tx.id ? (
@@ -120,19 +111,17 @@ export function TransactionTable({ transactions, onCategoryUpdated }: Transactio
                     <Pill category={tx.category} size="sm" />
                   )}
                 </td>
-                <td className="py-3 px-4 text-right whitespace-nowrap">
-                  <AmountDisplay
-                    amount={tx.type === 'income' ? tx.amount : -tx.amount}
-                    size="sm"
-                  />
+                <td className="py-3 px-4 text-right font-mono font-medium whitespace-nowrap">
+                  <span className={tx.type === 'income' ? 'text-[#10B981]' : 'text-[#EF4444]'}>
+                    {tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}
+                  </span>
                 </td>
                 <td className="py-3 px-4 text-[#9CA3AF] whitespace-nowrap">
                   {getAccountLabel(tx)}
                 </td>
-                <td className="py-3 px-4 whitespace-nowrap">
-                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#1F2937] text-[#9CA3AF]">
-                    <span>{origin.emoji}</span>
-                    <span>{origin.label}</span>
+                <td className="py-3 px-4">
+                  <span className="text-xs text-[#6B7280]">
+                    {origin.emoji} {origin.label}
                   </span>
                 </td>
               </tr>

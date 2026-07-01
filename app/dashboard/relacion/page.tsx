@@ -150,10 +150,15 @@ function RelacionContent() {
 
   if (years.length === 0) {
     return (
-      <div>
-        <h1 className="text-3xl font-bold text-[#F9FAFB] mb-2 tracking-tight">
-          Relación Mensual
-        </h1>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#F9FAFB] tracking-tight">
+            Relación Mensual
+          </h1>
+          <p className="text-[#9CA3AF] mt-1">
+            Historial de transacciones del hogar y análisis GonGar Advisor
+          </p>
+        </div>
         <EmptyState
           icon="📋"
           title="No hay transacciones del hogar"
@@ -166,12 +171,12 @@ function RelacionContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#F9FAFB] mb-2 tracking-tight">
+        <h1 className="text-3xl font-bold text-[#F9FAFB] tracking-tight">
           Relación Mensual
         </h1>
-        <p className="text-[#9CA3AF]">
+        <p className="text-[#9CA3AF] mt-1">
           Historial de transacciones del hogar y análisis GonGar Advisor
         </p>
       </div>
@@ -186,6 +191,7 @@ function RelacionContent() {
               key={year}
               title={`${year}`}
               defaultOpen={isCurrentYear}
+              variant="year"
             >
               <div className="space-y-4 mt-2">
                 {months.map((monthKey, monthIndex) => {
@@ -203,6 +209,7 @@ function RelacionContent() {
                       key={monthKey}
                       title={getMonthLabel(monthKey)}
                       defaultOpen={isExpanded}
+                      variant="month"
                       onToggle={(open) => {
                         if (open && analysisMap[monthKey] === undefined) {
                           loadAnalysis(monthKey);
@@ -261,8 +268,13 @@ function RelacionContent() {
                         </div>
 
                         {categoryData.length > 0 && (
-                          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-4">
-                            <CategoryDonutChart data={categoryData} />
+                          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6">
+                            <h3 className="text-sm font-medium text-[#9CA3AF] mb-4">
+                              Gastos por Categoría
+                            </h3>
+                            <div className="max-w-sm mx-auto">
+                              <CategoryDonutChart data={categoryData} />
+                            </div>
                           </div>
                         )}
 

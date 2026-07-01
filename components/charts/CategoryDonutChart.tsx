@@ -15,7 +15,7 @@ interface CategoryDonutChartProps {
 
 export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={280}>
       <PieChart>
         <Pie
           data={data}
@@ -39,7 +39,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
             borderRadius: '8px',
             color: '#F9FAFB',
           }}
-          formatter={(value: any) => formatCurrency(Number(value))}
+          formatter={(value) => formatCurrency(Number(value))}
         />
         <Legend
           wrapperStyle={{ color: '#9CA3AF', fontSize: '12px' }}

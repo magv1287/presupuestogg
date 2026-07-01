@@ -162,12 +162,14 @@ export default function ResumenPage() {
   const hasAnalyzedData = analyzedMonths.length > 0;
 
   return (
-    <div>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#F9FAFB] mb-2 tracking-tight">
+        <h1 className="text-3xl font-bold text-[#F9FAFB] tracking-tight">
           Resumen Financiero
         </h1>
-        <p className="text-[#9CA3AF]">Vista general de ingresos, gastos y ahorros del household</p>
+        <p className="text-[#9CA3AF] mt-1">
+          Vista general de ingresos, gastos y ahorros del household
+        </p>
       </div>
 
       {!hasTransactions ? (
@@ -262,12 +264,14 @@ export default function ResumenPage() {
                 </div>
 
                 <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold text-[#F9FAFB] mb-4">
+                  <h3 className="text-sm font-medium text-[#9CA3AF] mb-4">
                     Gastos por Categoría —{' '}
                     {selectedParsed ? SPANISH_MONTHS[selectedParsed.month - 1] : ''}
                   </h3>
                   {categoryBreakdown.length > 0 ? (
-                    <CategoryDonutChart data={categoryBreakdown} />
+                    <div className="max-w-sm mx-auto">
+                      <CategoryDonutChart data={categoryBreakdown} />
+                    </div>
                   ) : (
                     <EmptyState
                       icon="🍩"

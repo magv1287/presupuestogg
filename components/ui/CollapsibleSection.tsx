@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useState, KeyboardEvent } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -8,6 +9,7 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   badge?: ReactNode;
   onToggle?: (open: boolean) => void;
+  variant?: 'year' | 'month' | 'default';
 }
 
 export function CollapsibleSection({
@@ -16,6 +18,7 @@ export function CollapsibleSection({
   defaultOpen = false,
   badge,
   onToggle,
+  variant = 'default',
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -32,36 +35,52 @@ export function CollapsibleSection({
     }
   };
 
+  const isMonth = variant === 'month';
+
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-2xl overflow-hidden">
+    <div
+      className={
+        isMonth
+          ? 'bg-[#0D1117] border border-[#1F2937] rounded-xl overflow-hidden'
+          : 'bg-[#111827] border border-[#1F2937] rounded-2xl overflow-hidden'
+      }
+    >
       <div
         role="button"
         tabIndex={0}
         onClick={toggle}
         onKeyDown={handleKeyDown}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-[#1F2937] transition-colors cursor-pointer"
+        className={
+          isMonth
+            ? 'w-full px-5 py-4 flex items-center justify-between hover:bg-[#161B22] transition-colors cursor-pointer'
+            : 'w-full px-6 py-4 flex items-center justify-between hover:bg-[#1F2937] transition-colors cursor-pointer'
+        }
       >
-        <div className="flex items-center gap-3 flex-wrap min-w-0">
-          <h3 className="text-lg font-semibold text-[#F9FAFB]">{title}</h3>
-          {badge}
-        </div>
+        {isMonth ? (
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <span className="text-base font-semibold text-[#F9FAFB]">{title}</span>
+            {badge}
+          </div>
+        ) : badge ? (
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <span className="text-lg font-semibold text-[#F9FAFB]">{title}</span>
+            {badge}
+          </div>
+        ) : (
+          <span className="text-lg font-semibold text-[#F9FAFB]">{title}</span>
+        )}
 
-        <svg
-          className={`w-5 h-5 text-[#9CA3AF] transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+        <ChevronDown
+          className={`text-[#9CA3AF] transition-transform duration-200 flex-shrink-0 ${
+            isMonth ? 'w-4 h-4' : 'w-5 h-5'
+          } ${isOpen ? 'rotate-180' : ''}`}
           aria-hidden
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        />
       </div>
 
-      <div
-        className={`transition-all duration-200 ${isOpen ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
-      >
-        <div className="px-6 pb-6">{children}</div>
-      </div>
+      {isOpen && (
+        <div className={isMonth ? 'px-5 pb-5' : 'px-6 pb-6'}>{children}</div>
+      )}
     </div>
   );
 }

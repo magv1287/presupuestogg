@@ -92,7 +92,7 @@ export default function CuentaPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#F9FAFB] mb-2 tracking-tight">Cuenta</h1>
         <p className="text-[#9CA3AF]">Perfil del hogar, cuentas de ahorro y preferencias</p>

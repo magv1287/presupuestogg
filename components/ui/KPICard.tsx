@@ -13,40 +13,33 @@ interface KPICardProps {
 
 export function KPICard({ icon, label, value, comparison }: KPICardProps) {
   const displayValue = typeof value === 'number' ? formatCurrency(value) : value;
-  
-  const getComparisonColor = () => {
-    if (!comparison) return '';
-    if (comparison.direction === 'up') return 'text-[#10B981] bg-[#10B98120]';
-    if (comparison.direction === 'down') return 'text-[#EF4444] bg-[#EF444420]';
-    return 'text-[#9CA3AF] bg-[#1F2937]';
-  };
-  
-  const getComparisonIcon = () => {
-    if (!comparison) return null;
-    if (comparison.direction === 'up') return '↑';
-    if (comparison.direction === 'down') return '↓';
-    return '→';
-  };
-  
+  const isNegative = typeof value === 'number' && value < 0;
+
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 transition-all duration-200 hover:border-[#374151]">
-      <div className="flex items-start justify-between mb-4">
-        <div className="text-[#9CA3AF]">
-          {icon}
-        </div>
-        {comparison && (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${getComparisonColor()}`}>
-            {getComparisonIcon()} {formatPercentage(Math.abs(comparison.value))}
+    <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-5 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-2xl">{icon}</span>
+        {comparison && comparison.direction !== 'neutral' && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-mono ${
+              comparison.direction === 'up'
+                ? 'bg-[#10B98120] text-[#10B981]'
+                : 'bg-[#EF444420] text-[#EF4444]'
+            }`}
+          >
+            {comparison.direction === 'up' ? '↑' : '↓'}{' '}
+            {formatPercentage(Math.abs(comparison.value))}
           </span>
         )}
       </div>
-      
-      <div>
-        <p className="text-sm text-[#9CA3AF] mb-1">{label}</p>
-        <p className="text-2xl font-bold text-[#F9FAFB] font-mono tracking-tight">
-          {displayValue}
-        </p>
-      </div>
+      <p className="text-sm text-[#9CA3AF]">{label}</p>
+      <p
+        className={`text-2xl font-bold font-mono tracking-tight ${
+          isNegative ? 'text-[#EF4444]' : 'text-[#F9FAFB]'
+        }`}
+      >
+        {displayValue}
+      </p>
     </div>
   );
 }
